@@ -41,6 +41,7 @@ import numpy                as np
 from scipy.interpolate import griddata
 import tpx_tools as tpx
 import croco_vgrid as vgrd
+from netCDF4 import Dataset     as netcdf
 #
 ### FUNCTION GET_CSF ###################################################
 #
@@ -491,6 +492,10 @@ def get_section(lonsec,latsec,var,lon,lat,rmask,h,zeta,theta_s,theta_b,hc,N,vtra
   (dlony,dlonx)=np.gradient(lon)
   (dlaty,dlatx)=np.gradient(lat)
   dl=2*np.max((np.max(np.abs(dlonx)),np.max(np.abs(dlony)),np.max(np.abs(dlatx)),np.max(np.abs(dlaty))))
+
+
+  print(dl)
+  
   minlon=np.min(lonsec)-dl
   minlat=np.min(latsec)-dl
   maxlon=np.max(lonsec)+dl
@@ -747,3 +752,81 @@ def get_UV_section(lonsec,latsec,u,v,lon,lat,rmask,h,zeta,theta_s,theta_b,hc,N,v
   LAT=np.matlib.repmat(latsec,N,1)
 
   return LON,LAT,X,Z,Un,Ut
+
+### FUNCTION GET_UV_SECTION ###################################################
+
+### FUNCTION GET_NS_SECTION ###################################################
+
+def get_NS_section(Lat_min,Lat_max,Lon_sec,fname,vname,tndx):
+
+#
+#  Extract a  merdional vertical slice from a ROMS netcdf file 
+#  (with a regular rectangular grid)
+#
+# 
+# On Input:
+# 
+#    Lat_min     Minimum latitude of section
+#    Lat_max     Maximum latitude of section
+#    Lon_sec     Longitude of section
+#    fname       ROMS/CROCO netcdf name
+#    vname       ROMS/CROCO variable name
+#
+#
+# On Output: LAT,Z,VAR
+#
+#    LAT         Latitudes of the section (2D matrix)
+#    Z           Slice Z-positions (2D matrix)
+#    VAR         Slice variable (2D matrix)
+#
+#
+### FUNCTION GET_NS_SECTION ###################################################
+
+# 
+# Open netcdf file
+# 
+
+  nc=netcdf(fname,mode='r')
+
+#
+# Read in the file
+#
+
+  lon = np.array(nc.variables['lon_rho'][0,:])
+  lat = np.array(nc.variables['lat_rho'][:,0])
+
+  print 'Lon min: ', lon.min(),' Lon max: ', lon.max()
+  print 'Lat min: ', lat.min(),' Lat max: ', lat.max()
+
+  dlon=np.abs(lon-Lon_sec)
+  dlat1=np.abs(lat-Lat_min)
+  dlat2=np.abs(lat-Lat_max)
+
+  i=np.int(np.array(np.where(dlon==np.min(dlon))))
+  jmin=np.int(np.array(np.where(dlat1==np.min(dlat1))))
+  jmax=np.int(np.array(np.where(dlat2==np.min(dlat2))))
+
+  lat = lat[jmin:jmax]
+  rmask=np.array(nc.variables['mask_rho'][jmin:jmax,i])
+  h=np.array(nc.variables['h'][jmin:jmax,i])
+  zeta=np.array(nc.variables['zeta'][tndx,jmin:jmax,i])
+  print(vname)
+  VAR=np.array(nc.variables[vname][tndx,:,jmin:jmax,i])
+
+  theta_s=nc.theta_s
+  theta_b=nc.theta_b
+  hc=nc.hc
+  vtransform=nc.variables['Vtransform'][:]
+  sc_r=nc.variables['sc_r'][:]
+  N=np.size(sc_r)
+
+  nc.close()
+
+  LAT=np.matlib.repmat(lat,N,1)
+  MASK=np.matlib.repmat(rmask,N,1)
+  VAR[np.where(MASK==0)]=np.nan
+  Z=vgrd.zlevs(h,zeta,theta_s,theta_b,hc,N,'r',vtransform)
+
+  return LAT,Z,VAR
+
+### FUNCTION GET_NS_SECTION ###################################################

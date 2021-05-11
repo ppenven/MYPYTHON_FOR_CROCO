@@ -4,7 +4,7 @@ from netCDF4 import Dataset  as netcdf
 import time
 import os
 import sys
-sys.path.insert(0,'/home/penven/Teletravail/MYPYTHON_FOR_ROMS')
+#sys.path.insert(0,'/home/penven/Teletravail/MYPYTHON_FOR_ROMS')
 import croco_vgrid as vgrd
 #
 #function create_bryfile(bryname,grdname,title,obc,...
