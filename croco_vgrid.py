@@ -795,8 +795,8 @@ def get_NS_section(Lat_min,Lat_max,Lon_sec,fname,vname,tndx):
   lon = np.array(nc.variables['lon_rho'][0,:])
   lat = np.array(nc.variables['lat_rho'][:,0])
 
-  print 'Lon min: ', lon.min(),' Lon max: ', lon.max()
-  print 'Lat min: ', lat.min(),' Lat max: ', lat.max()
+  print( 'Lon min: ', lon.min(),' Lon max: ', lon.max())
+  print( 'Lat min: ', lat.min(),' Lat max: ', lat.max())
 
   dlon=np.abs(lon-Lon_sec)
   dlat1=np.abs(lat-Lat_min)

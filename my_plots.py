@@ -140,7 +140,7 @@ def figmap(lon,lat):
 
 # --------------- second figure with a map ---------------
 
-def figmap2(lon,lat,lonmin,lonmax,latmin,latmax,res):
+def figmap2(lon,lat,lonmin,lonmax,latmin,latmax,res,fsize):
 
   m = bm.Basemap(projection='merc',
                llcrnrlat=latmin, llcrnrlon=lonmin,
@@ -149,10 +149,10 @@ def figmap2(lon,lat,lonmin,lonmax,latmin,latmax,res):
   x, y = m(lon,lat)
   m.drawparallels(np.arange(10*np.floor(lat.min()/10),10*np.ceil(lat.max()/10),10.),
                       labels=[True,False,False,False],
-                      fontsize='5',linewidth=0.15)
+                      fontsize=fsize,linewidth=0.15)
   m.drawmeridians(np.arange(10*np.floor(lon.min()/10),10*np.ceil(lon.max()/10),10.),
                       labels=[False,False,False,True],
-                      fontsize='5',linewidth=0.15)
+                      fontsize=fsize,linewidth=0.15)
   m.fillcontinents(color='grey')
 
   #plt.xlabel('Longitude',labelpad=20)

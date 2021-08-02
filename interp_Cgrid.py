@@ -7,13 +7,13 @@ import numpy as np
 
 # --------------- from u-point to rho-point ---------------
 def u2rho_2d(var_u):
-        [Mp,L]          	= var_u.shape
-        Lp              	= L+1
-        Lm              	= L-1
-        var_rho         	= zeros((Mp,Lp))
-        var_rho[:,1:L]  	= 0.5*(var_u[:,0:Lm] + var_u[:,1:L])
-        var_rho[:,0]    	= var_rho[:,1]
-        var_rho[:,Lp-1] 	= var_rho[:,L-1]
+        [Mp,L]                  = var_u.shape
+        Lp                      = L+1
+        Lm                      = L-1
+        var_rho                 = zeros((Mp,Lp))
+        var_rho[:,1:L]          = 0.5*(var_u[:,0:Lm] + var_u[:,1:L])
+        var_rho[:,0]            = var_rho[:,1]
+        var_rho[:,Lp-1]         = var_rho[:,L-1]
         return var_rho
 
 def u2rho_3d(var_u):
@@ -37,12 +37,12 @@ def u2rho_4d(var_u):
         return var_rho
 
 def u2v_2d(var_u):
-        [Mp,L]          	= var_u.shape
-        M	              	= Mp-1
-        Mm              	= M-1
+        [Mp,L]                  = var_u.shape
+        M                              = Mp-1
+        Mm                      = M-1
         Lp                      = L+1
         Lm                      = L-1
-        var_v                  	= zeros((M,Lp))
+        var_v                          = zeros((M,Lp))
         var_v[0:M,1:L]          = 0.25*(var_u[:-1,:-1]+var_u[:-1,1:]+\
                                         var_u[1: ,:-1]+var_u[1: ,1:])
         var_v[:,0]              = var_v[:,1]
@@ -51,13 +51,13 @@ def u2v_2d(var_u):
 
 # --------------- from v-point to rho-point ---------------
 def v2rho_2d(var_v):
-        [M,Lp]          	= var_v.shape
-        Mp              	= M+1
-        Mm              	= M-1
-        var_rho         	= zeros((Mp,Lp))
-        var_rho[1:M,:]  	= 0.5*(var_v[0:Mm,:] + var_v[1:M,:])
-        var_rho[0,:]    	= var_rho[1,:]
-        var_rho[Mp-1,:] 	= var_rho[M-1,:]
+        [M,Lp]                  = var_v.shape
+        Mp                      = M+1
+        Mm                      = M-1
+        var_rho                 = zeros((Mp,Lp))
+        var_rho[1:M,:]          = 0.5*(var_v[0:Mm,:] + var_v[1:M,:])
+        var_rho[0,:]            = var_rho[1,:]
+        var_rho[Mp-1,:]         = var_rho[M-1,:]
         return var_rho
 
 def v2rho_3d(var_v):
@@ -81,12 +81,12 @@ def v2rho_4d(var_v):
         return var_rho
 
 def v2u_2d(var_v):
-        [M,Lp]          	= var_v.shape
-        Mp              	= M+1
-        Mm              	= M-1
+        [M,Lp]                  = var_v.shape
+        Mp                      = M+1
+        Mm                      = M-1
         L                       = Lp-1
         Lm                      = L-1
-        var_u                  	= zeros((Mp,L))
+        var_u                          = zeros((Mp,L))
         var_u[1:M,0:L]          = 0.25*(var_v[:-1,:-1]+var_v[:-1,1:]+\
                                         var_v[1: ,:-1]+var_v[1: ,1:])
         var_u[0,:]              = var_u[1,:]
@@ -95,7 +95,7 @@ def v2u_2d(var_v):
 
 # --------------- from rho-point to u,v,psi-point ---------------
 
-def rho2uvp(rfield): 				# often used for a mask
+def rho2uvp(rfield):                                 # often used for a mask
         [Mp,Lp]         = rfield.shape
         M               = Mp-1
         L               = Lp-1
@@ -158,7 +158,7 @@ def rho2p_3d(var_rho):
         return var_p
 
 # --------------- from psi-point to rho-point ---------------
-def psi2rho_2d(var_psi):				# this is for a 2D variable only
+def psi2rho_2d(var_psi):                                # this is for a 2D variable only
         [M,L]           = var_psi.shape
         Mp              = M+1
         Lp              = L+1
@@ -172,7 +172,7 @@ def psi2rho_2d(var_psi):				# this is for a 2D variable only
         var_rho[:,Lp-1] = var_rho[:,L-1]
         return var_rho
 
-def psi2rho_3d(var_psi):				# this is for a 3D variable only
+def psi2rho_3d(var_psi):                                # this is for a 3D variable only
         [N,M,L]         = var_psi.shape
         Mp              = M+1
         Lp              = L+1
@@ -214,7 +214,7 @@ def nine_pts_avg(var,mask):
 
         den[den==0]=nan
         var=num/den
-	
+        
         return var
 
 
@@ -248,8 +248,8 @@ def vort3d(u,v,pm,pn):
         [N,Mp,L] = u.shape
         Lp=L+1
         M=Mp-1
-	
-	om=2/(pm[:,0:L]+pm[:,1:Lp])
+        
+        om=2/(pm[:,0:L]+pm[:,1:Lp])
         on=2/(pn[0:M,:]+pn[1:Mp,:])
         uom=u*np.tile(om,(N,1,1))
         von=v*np.tile(on,(N,1,1))
@@ -317,7 +317,7 @@ def zlevs(zeta,h,sc_r,sc_w,Cs_r,Cs_w,hc,Vtransform):
   z_w[0,:,:]=-h
   z_r=np.zeros((N,Mp,Lp,), dtype=float, order='C')
   if Vtransform==2.0:
-    print 'NEW_S_COORD'
+    print('NEW_S_COORD')
     for k in np.arange(0,N,1):
 
       cff_w =hc*sc_w[k+1]
@@ -332,7 +332,7 @@ def zlevs(zeta,h,sc_r,sc_w,Cs_r,Cs_w,hc,Vtransform):
       z_r[k,:,:]=z_r0*h*hinv+zeta*(1.+z_r0*hinv)
 
   else:
-    print 'OLD_S_COORD'
+    print('OLD_S_COORD')
     for k in np.arange(0,N,1):
 
       cff_w =hc*(sc_w[k+1]-Cs_w[k+1])
