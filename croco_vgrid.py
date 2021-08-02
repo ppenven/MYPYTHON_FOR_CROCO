@@ -84,6 +84,7 @@ from scipy.interpolate import griddata
 import tpx_tools as tpx
 import croco_vgrid as vgrd
 from netCDF4 import Dataset     as netcdf
+from   progressbar import *
 
 #
 #
