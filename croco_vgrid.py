@@ -1,20 +1,28 @@
+
 #
-########################################################################
+#
+#########################################################################
 #
 #
-# A few python functions to deal with CROCO vertical grids :
+#
+# A collection of python functions to deal with CROCO vertical grids :
+#
 #
 # * CSF = get_csf(sc,theta_s,theta_b)
 # Get CS-Curves for the new s-ccordinate system
 #
+#
 # * (sc_r,Cs_r,sc_w,Cs_w) = scoordinate(theta_s,theta_b,N,hc,vtransform)
 # Define S-Curves in domain [-1 < sc < 0] at vertical W- and RHO-points.
+#
 #
 # * z=zlevs(h,zeta,theta_s,theta_b,hc,N,type,vtransform)
 # Compute the depth of rho or w points for CROCO
 #
+#
 # * vnew=vinterp(var,z,depth)
 # Interpolate a 3D variable on a horizontal level of constant depth
+#
 #
 # * (V,h0)=vintegr(var,zw,zr,z01,z02)
 # Vertically integrate a CROCO variable (var) from a constant depth 
@@ -24,9 +32,11 @@
 # If they are both NaNs perform the integration from the bottom
 # to the surface.
 #
+#
 # * (LON,LAT,X,Z,VAR)=get_section(lonsec,latsec,var,lon,lat,
 #                       rmask,h,zeta,theta_s,theta_b,hc,N,vtransform)
 #  Extract a vertical slice in any direction (or along a curve).
+#
 #
 # * (LON,LAT,X,Z,Un,Ut)=get_UV_section(lonsec,latsec,u,v, lon,lat,
 #                            rmask,h,zeta,theta_s,theta_b,hc,N,vtransform)
@@ -34,23 +44,61 @@
 #  in any direction (or along a curve)
 #
 #
+# * vout = ztosigma(vin,Z,zcroco):
+# Do a vertical interpolation from z levels to sigma CROCO levels
+#
+#
+# * vout = add2layers(vin):
+# Add a layer below the bottom and above the surface on a z grid to avoid 
+# vertical extrapolations when doing a vertical interpolation to sigma
+#
+#
 ########################################################################
 #
+#
+#  This is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published
+#  by the Free Software Foundation; either version 2 of the License,
+#  or (at your option) any later version.
+#
+#  CROCOTOOLS is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+#  MA  02111-1307  USA
+#
+#  Pierrick Penven, 2021
+#
+#
+########################################################################
+#
+#
+
 import sys
 import numpy                as np
 from scipy.interpolate import griddata
 import tpx_tools as tpx
 import croco_vgrid as vgrd
 from netCDF4 import Dataset     as netcdf
+
+#
 #
 ### FUNCTION GET_CSF ###################################################
 #
+#
+
+def get_csf(sc,theta_s,theta_b): 
+
 # function CSF = get_csf(sc,theta_s,theta_b)
 #
 # Get CS-Curves for the new s-ccordinate system
 #
-                                          # NOTE: Mathematical 
-def get_csf(sc,theta_s,theta_b):            # limits of CSF,csrf for
+                                            # NOTE: Mathematical 
+                                            # limits of CSF,csrf for
                                             # theta_s, theta_b --> 0
                                             # match that under "else"
                                             # logical branches.
@@ -67,17 +115,28 @@ def get_csf(sc,theta_s,theta_b):            # limits of CSF,csrf for
 
   return CSF
 
+#
+#
 ### END FUNCTION GET_CSF ###################################################
+#
+#
 
 
+
+#
+#
 ### FUNCTION SCOORDINATE ###################################################
+#
+#
+
+def scoordinate(theta_s,theta_b,N,hc,vtransform):
+
 #
 # function [sc_r,Cs_r,sc_w,Cs_w] = scoordinate(theta_s,theta_b,N,hc,vtransform)
 #
 # Define S-Curves in domain [-1 < sc < 0] at vertical W- and RHO-points.
 #
 ########################################################################
-def scoordinate(theta_s,theta_b,N,hc,vtransform):
 #
 # Set S-Curves in domain [-1 < sc < 0] at vertical W- and RHO-points.
 #
@@ -120,11 +179,23 @@ def scoordinate(theta_s,theta_b,N,hc,vtransform):
            theta_b * (cff2 * np.tanh(theta_s * (sc_r + 0.5)) - 0.5)
 
   return sc_r,Cs_r,sc_w,Cs_w
+
+#
+#
 ### END FUNCTION SCOORDINATE ###################################################
+#
+#
 
 
 
+#
+#
 ### FUNCTION ZLEVS #####################################################
+#
+#
+
+def zlevs(h,zeta,theta_s,theta_b,hc,N,type,vtransform):
+
 #
 # function z=zlevs(h,zeta,theta_s,theta_b,hc,N,type,vtransform)
 #
@@ -140,7 +211,6 @@ def scoordinate(theta_s,theta_b,N,hc,vtransform):
 #    z       Depths (m) of RHO- or W-points (3D matrix).
 #
 ########################################################################
-def zlevs(h,zeta,theta_s,theta_b,hc,N,type,vtransform):
 
 #
 # Test the number of dimension for h
@@ -235,11 +305,21 @@ def zlevs(h,zeta,theta_s,theta_b,hc,N,type,vtransform):
 
   return z
 
+#
+#
 ### END FUNCTION ZLEVS #################################################
+#
+#
 
 
-
+#
+#
 ### FUNCTION VINTERP ###################################################
+#
+#
+
+def  vinterp(var,z,depth):
+
 #
 # function  vnew = vinterp(var,z,depth)
 #
@@ -260,7 +340,8 @@ def zlevs(h,zeta,theta_s,theta_b,hc,N,type,vtransform):
 #  http://www.croco-ocean.org
 #
 ######################################################################
-def  vinterp(var,z,depth):
+#
+#
 
   [N,M,L]=np.shape(z)
   i1=np.arange(0,L)
@@ -298,11 +379,20 @@ def  vinterp(var,z,depth):
   
   return vnew
 
+#
+#
 ### END FUNCTION VINTERP ###############################################
+#
+#
 
 
 
+
+#
+#
 ### FUNCTION VINTEGR ###################################################
+#
+#
 
 def vintegr(var,zw,zr,z01,z02):
 
@@ -444,12 +534,23 @@ def vintegr(var,zw,zr,z01,z02):
   
   return V,h0
 
+#
+#
 ### END FUNCTION VINTEGR ###############################################
+#
+#
 
 
+
+
+#
+#
 ### FUNCTION GET_SECTION ###################################################
+#
+#
 
 def get_section(lonsec,latsec,var,lon,lat,rmask,h,zeta,theta_s,theta_b,hc,N,vtransform):
+
 #
 #  Extract a vertical slice in any direction (or along a curve)
 #  from a ROMS netcdf file.
@@ -590,11 +691,20 @@ def get_section(lonsec,latsec,var,lon,lat,rmask,h,zeta,theta_s,theta_b,hc,N,vtra
   LAT=np.matlib.repmat(latsec,N,1)
 
   return LON,LAT,X,Z,VAR
+#
+#
+### END FUNCTION GET_SECTION ###################################################
+#
+#
 
 
 
 
+#
+#
 ### FUNCTION GET_UV_SECTION ###################################################
+#
+#
 
 def get_UV_section(lonsec,latsec,u,v,lon,lat,rmask,h,zeta,theta_s,theta_b,hc,N,vtransform):
 
@@ -753,9 +863,21 @@ def get_UV_section(lonsec,latsec,u,v,lon,lat,rmask,h,zeta,theta_s,theta_b,hc,N,v
 
   return LON,LAT,X,Z,Un,Ut
 
-### FUNCTION GET_UV_SECTION ###################################################
+#
+#
+### END FUNCTION GET_UV_SECTION ###############################################
+#
+#
 
+
+
+
+
+#
+#
 ### FUNCTION GET_NS_SECTION ###################################################
+#
+#
 
 def get_NS_section(Lat_min,Lat_max,Lon_sec,fname,vname,tndx):
 
@@ -781,6 +903,8 @@ def get_NS_section(Lat_min,Lat_max,Lon_sec,fname,vname,tndx):
 #
 #
 ### FUNCTION GET_NS_SECTION ###################################################
+#
+#
 
 # 
 # Open netcdf file
@@ -829,4 +953,114 @@ def get_NS_section(Lat_min,Lat_max,Lon_sec,fname,vname,tndx):
 
   return LAT,Z,VAR
 
-### FUNCTION GET_NS_SECTION ###################################################
+#
+#
+### END FUNCTION GET_NS_SECTION ###################################################
+#
+#
+
+
+
+
+
+#
+#
+#
+#### FUNCTION ZTOSIGMA #######################################################
+#
+#
+
+def ztosigma(vin,Z,zcroco):
+
+#
+#
+# Do a vertical interpolation from z levels to sigma CROCO levels
+#
+#
+######################################################################
+#
+#
+#
+
+  [N,M,L]=np.shape(zcroco)
+  [Nz]=np.shape(Z)
+
+#
+# Find the grid position of the nearest vertical levels
+#
+
+  i1=np.arange(0,L)
+  j1=np.arange(0,M)
+  [imat,jmat]=np.meshgrid(i1,j1)
+  VAR=np.reshape(vin,Nz*M*L)
+  vout=np.zeros((N,M,L))
+
+#
+# Loop on the sigma layers
+#
+
+  for ks in progressbar(range(N),' Sigma layer : ', 40):   
+
+    sigmalev=zcroco[ks,:,:]
+    thezlevs=np.zeros((M,L),dtype=int)-1
+    for kz in range(Nz):
+      thezlevs[np.where(sigmalev>Z[kz])]=thezlevs[np.where(sigmalev>Z[kz])]+1
+ 
+    pos= L*M*thezlevs + L*jmat + imat
+
+    z1=Z[thezlevs]
+    z2=Z[thezlevs+1]
+    v1=VAR[pos]
+    v2=VAR[pos+1]
+
+    vout[ks,:,:]=(((v1-v2)*sigmalev+v2*z1-v1*z2)/(z1-z2))
+  
+  return vout
+
+#
+#
+#
+#### END FUNCTION ZTOSIGMA ######################################################
+#
+#
+
+
+
+
+
+#
+#
+#
+#### FUNCTION ADD2LAYERS ########################################################
+#
+#
+
+def add2layers(vin):
+
+#
+#
+# Add a layer below the bottom and above the surface to avoid 
+# vertical extrapolations when doing a vertical interpolation 
+# 
+#
+######################################################################
+#
+#
+#
+
+  [Nz,M,L]=np.shape(vin)
+
+  vout=np.zeros((Nz+2,M,L))
+
+  vout[1:-1,:,:]=vin
+  vout[0,:,:]=vin[0,:,:]
+  vout[-1,:,:]=vin[-1,:,:]
+  
+  return vout
+
+#
+#
+#
+#### END FUNCTION ADD2LAYERS ####################################################
+#
+#
