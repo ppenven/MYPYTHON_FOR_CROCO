@@ -12,36 +12,74 @@
 #
 # Gustav Rautenbach, Steven Herbette, Pierrick Penven, 2021
 #
+#########################################################################
+#
 #
 #  geo_idx = geo_idx(dd, dd_array)
-#  Get index of particular coordinate
 #
-#  (elem,coef) = get_tri_coef(X, Y, newX, newY, verbose=0):
-#  Get Delaunay linear interpolation pointers and coefficients
-#
-#  varnew=  horiz_interp_delaunay(lonold,latold,varold,lonnew,latnew,elem=0,coef=0):
+#    Get the closest index of a particular coordinate
 #
 #
+#  (elem,coef) = get_tri_coef(X, Y, newX, newY, verbose=0)
+#
+#    Get Delaunay linear interpolation pointers and coefficients
+#
+#
+#  varnew =  horiz_interp_delaunay(lonold,latold,varold,lonnew,latnew,elem=0,coef=0)
+#
+#    Do an horizontal interpolation
+#
+#
+#  Vout,NzGood = interp_tracers(nc,vname,l,k,imin,imax,jmin,jmax,Lon,Lat,coef,elem)
+#
+#    Remove the missing values from a gridded 2D field from a Netcdf file
+#    and do an horizontal interpolation using Delaunay matrices (coef and elem)
+#
+#
+#  vout=interp3d(nc,vname,tndx_glo,Nzgoodmin,depth,z_rho,imin,imax,jmin,jmax,Lon,Lat,coef,elem)
+#
+#    Do a full interpolation of a 3d variable from GLORYS to a CROCO sigma grid
+#    1 - Horizontal interpolation on each GLORYS levels
+#    2 - Vertical Interpolation from z to CROCO sigma levels
+#
+#
+#  uout,vout=interp3d_uv(nc,tndx_glo,Nzgoodmin,depth,z_rho,cosa,sina,\
+#                iminU,imaxU,jminU,jmaxU,LonU,LatU,coefU,elemU,\
+#                iminV,imaxV,jminV,jmaxV,LonV,LatV,coefV,elemV)
+#    Do a full interpolation of a 3d U and V from GLORYS to a CROCO sigma grid
+#    Do a rotation to align with CROCO grid (if not rectangular)
 #
 #
 #
+#  create_inifile(ininame,grdname,title,theta_s,theta_b,hc,N,ini_time,vtransform)
+#
+#    This function create a Netcdf initial file
 #
 #
+#  create_bryfile(bryname,grdname,title,obc...
+#                          theta_s,theta_b,hc,N,...
+#                          bry_time,cycle,clobber)
+#
+#    This function create a Netcdf boundary file
 #
 #
+#  (LonT_bry,LatT_bry,iminT_bry,imaxT_bry,jminT_bry,jmaxT_bry,elemT_bry,coefT_bry,\
+#   LonU_bry,LatU_bry,iminU_bry,imaxU_bry,jminU_bry,jmaxU_bry,elemU_bry,coefU_bry,\
+#   LonV_bry,LatV_bry,iminV_bry,imaxV_bry,jminV_bry,jmaxV_bry,elemV_bry,coefV_bry)\
+#   = get_delaunay_bry(lon_bry,lat_bry,dl,ncglo)
+#
+#     Get Delaunay linear interpolation pointers and coefficients for each boundary
+#
+#  ncbry = interp_bry(obctype,ncglo,tndx_glo,ncbry,tndx_bry,\
+#               h_bry,theta_s,theta_b,hc,N,vtransform,\
+#	        Nzgoodmin,depth,angle_bry,\
+#               LonT_bry,LatT_bry,iminT_bry,imaxT_bry,jminT_bry,jmaxT_bry,elemT_bry,coefT_bry,\
+#               LonU_bry,LatU_bry,iminU_bry,imaxU_bry,jminU_bry,jmaxU_bry,elemU_bry,coefU_bry,\
+#	        LonV_bry,LatV_bry,iminV_bry,imaxV_bry,jminV_bry,jmaxV_bry,elemV_bry,coefV_bry)
 #
 #
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
+#    Do a full interpolation of a 3d variable from GLORYS to a CROCO sigma grid
+#    for each boundary
 #
 #
 ########################################################################
@@ -72,9 +110,11 @@ from netCDF4 import Dataset  as netcdf
 from scipy.interpolate import griddata
 import os
 import sys
+import time
 sys.path.insert(0,'/home/penven/Teletravail/MYPYTHON_FOR_CROCO')
 sys.path.insert(0,'/home/ppenven/Teletravail/MYPYTHON_FOR_CROCO')
 import croco_vgrid as vgrd
+import croco_glorys as glor
 from interp_Cgrid import *
 from scipy.spatial import Delaunay
 from   progressbar import *
@@ -391,15 +431,14 @@ def interp3d(nc,vname,tndx_glo,Nzgoodmin,depth,z_rho,imin,imax,jmin,jmax,Lon,Lat
 #
 #
 
-
-
-
-#
 #
 #
 ######################################################################
+##### FUNCTION INTERP3D_UV ###########################################
+######################################################################
 #
 #
+
 
 def interp3d_uv(nc,tndx_glo,Nzgoodmin,depth,z_rho,cosa,sina,\
                 iminU,imaxU,jminU,jmaxU,LonU,LatU,coefU,elemU,\
@@ -495,26 +534,29 @@ def interp3d_uv(nc,tndx_glo,Nzgoodmin,depth,z_rho,cosa,sina,\
 
 #
 #
+#
+######################################################################
+###### END FUNCTION INTERP3D_UV ######################################
 ######################################################################
 #
 #
 
 
+
 #
 #
+######################################################################
+##### FUNCTION CREATE_INIFILE ########################################
 ######################################################################
 #
 #
 
-def create_inifile(ininame,grdname,title,theta_s,theta_b,hc,N,time,vtransform):
+def create_inifile(ininame,grdname,title,theta_s,theta_b,hc,N,ini_time,vtransform):
 
 #
 #
 ################################################################
 #
-#  function nc=create_ininame(ininame,grdname,theta_s,...
-#                  theta_b,hc,N,ttime,stime,utime,... 
-#                  cycle,clobber)
 #
 #   This function create the header of a Netcdf climatology 
 #   file.
@@ -522,14 +564,14 @@ def create_inifile(ininame,grdname,title,theta_s,theta_b,hc,N,time,vtransform):
 #   Input: 
 # 
 #   ininame      Netcdf initial file name (character string).
-#   grdname     Netcdf grid file name (character string).
+#   grdname      Netcdf grid file name (character string).
 #   theta_s      S-coordinate surface control parameter.(Real)
 #   theta_b      S-coordinate bottom control parameter.(Real)
 #   hc           Width (m) of surface or bottom boundary layer
 #                where higher vertical resolution is required 
 #                during stretching.(Real)
 #   N            Number of vertical levels.(Integer)  
-#   time         Initial time.(Real) 
+#   ini_time     Initial time.(Real) 
 #   clobber      Switch to allow or not writing over an existing
 #                file.(character string) 
 #
@@ -583,7 +625,7 @@ def create_inifile(ininame,grdname,title,theta_s,theta_b,hc,N,time,vtransform):
 #
 
   nc.title = title
-#nc.date = date
+  nc.history = 'Created '+str(time.ctime(time.time()))
   nc.ini_file = ininame
   nc.grd_file = grdname
   nc.type='CROCO initial file'
@@ -601,7 +643,7 @@ def create_inifile(ininame,grdname,title,theta_s,theta_b,hc,N,time,vtransform):
   nc_dim_s_rho=nc.createDimension('s_rho',N)
   nc_dim_s_w=nc.createDimension('s_w',Np)
   nc_dim_tracer=nc.createDimension('tracer',2)
-  nc_dim_time=nc.createDimension('time',0)
+  nc_dim_ini_time=nc.createDimension('ini_time',0)
   nc_dim_one=nc.createDimension('one',1)
 
 #
@@ -681,39 +723,39 @@ def create_inifile(ininame,grdname,title,theta_s,theta_b,hc,N,time,vtransform):
   nc_Cs_w.valid_min = -1
   nc_Cs_w.valid_max = 0
 #
-  nc_scrum_time=nc.createVariable('scrum_time',np.float64, ('time',))
-  nc_scrum_time.long_name = 'time since initialization'
+  nc_scrum_time=nc.createVariable('scrum_time',np.float64, ('ini_time',))
+  nc_scrum_time.long_name = 'ini_time since initialization'
   nc_scrum_time.units = 'second'
 #
-  nc_ocean_time=nc.createVariable('ocean_time',np.float64, ('time',))
-  nc_ocean_time.long_name = 'time since initialization'
+  nc_ocean_time=nc.createVariable('ocean_time',np.float64, ('ini_time',))
+  nc_ocean_time.long_name = 'ini_time since initialization'
   nc_ocean_time.units = 'second'
 #
-  nc_u=nc.createVariable('u',np.float64, ('time','s_rho','eta_u','xi_u',)) 
+  nc_u=nc.createVariable('u',np.float64, ('ini_time','s_rho','eta_u','xi_u',)) 
   nc_u.long_name = 'u-momentum component'
   nc_u.units = 'meter second-1'
 #
-  nc_v=nc.createVariable('v',np.float64, ('time','s_rho','eta_v','xi_v',)) 
+  nc_v=nc.createVariable('v',np.float64, ('ini_time','s_rho','eta_v','xi_v',)) 
   nc_v.long_name = 'v-momentum component'
   nc_v.units = 'meter second-1'
 #
-  nc_ubar=nc.createVariable('ubar',np.float64, ('time','eta_u','xi_u',)) 
+  nc_ubar=nc.createVariable('ubar',np.float64, ('ini_time','eta_u','xi_u',)) 
   nc_ubar.long_name = 'vertically integrated u-momentum component'
   nc_ubar.units = 'meter second-1'
 #
-  nc_vbar=nc.createVariable('vbar',np.float64, ('time','eta_v','xi_v',)) 
+  nc_vbar=nc.createVariable('vbar',np.float64, ('ini_time','eta_v','xi_v',)) 
   nc_vbar.long_name = 'vertically integrated v-momentum component'
   nc_vbar.units = 'meter second-1'
 #
-  nc_zeta=nc.createVariable('zeta',np.float64, ('time','eta_rho','xi_rho',)) 
+  nc_zeta=nc.createVariable('zeta',np.float64, ('ini_time','eta_rho','xi_rho',)) 
   nc_zeta.long_name = 'free-surface'
   nc_zeta.units = 'meter'
 #
-  nc_temp=nc.createVariable('temp',np.float64, ('time','s_rho','eta_rho','xi_rho',)) 
+  nc_temp=nc.createVariable('temp',np.float64, ('ini_time','s_rho','eta_rho','xi_rho',)) 
   nc_temp.long_name = 'potential temperature'
   nc_temp.units = 'Celsius'
 #
-  nc_salt=nc.createVariable('salt',np.float64, ('time','s_rho','eta_rho','xi_rho',))
+  nc_salt=nc.createVariable('salt',np.float64, ('ini_time','s_rho','eta_rho','xi_rho',))
   nc_salt.long_name = 'salinity'
   nc_salt.units = 'PSU'
 
@@ -731,16 +773,16 @@ def create_inifile(ininame,grdname,title,theta_s,theta_b,hc,N,time,vtransform):
   nc_spherical[:]='T'
   nc_Vtransform[:]=vtransform
   nc_Vstretching[:]=1
-  nc_tstart[:] =  time 
-  nc_tend[:] =  time 
+  nc_tstart[:] =  ini_time 
+  nc_tend[:] =  ini_time 
   nc_theta_s[:] =  theta_s 
   nc_theta_b[:] =  theta_b 
   nc_Tcline[:] =  hc 
   nc_hc[:] =  hc 
   nc_sc_r[:] =  sc_r 
   nc_Cs_r[:] =  Cs_r 
-  nc_scrum_time[0] = time*24.*3600. 
-  nc_ocean_time[0] = time*24.*3600. 
+  nc_scrum_time[0] = ini_time*24.*3600. 
+  nc_ocean_time[0] = ini_time*24.*3600. 
   nc_u[:] =  0 
   nc_v[:] =  0 
   nc_zeta[:] =  0 
@@ -756,20 +798,26 @@ def create_inifile(ininame,grdname,title,theta_s,theta_b,hc,N,time,vtransform):
 
 #
 #
+#
+######################################################################
+###### END FUNCTION CREATE_INIFILE ###################################
 ######################################################################
 #
 #
 
 
+
 #
 #
+######################################################################
+##### FUNCTION CREATE_BRYFILE ########################################
 ######################################################################
 #
 #
 
 def create_bryfile(bryname,grdname,title,obc,\
                         theta_s,theta_b,hc,N,\
-                        time,cycle,vtransform):
+                        bry_time,cycle,vtransform):
 
 #
 #
@@ -777,7 +825,7 @@ def create_bryfile(bryname,grdname,title,obc,\
 #
 # function create_bryfile(bryname,grdname,title,obc...
 #                          theta_s,theta_b,hc,N,...
-#                          time,cycle,clobber)
+#                          bry_time,cycle,clobber)
 #
 #   This function create the header of a Netcdf climatology 
 #   file.
@@ -793,10 +841,8 @@ def create_bryfile(bryname,grdname,title,obc,\
 #                where higher vertical resolution is required 
 #                during stretching.(Real)
 #   N            Number of vertical levels.(Integer)
-#   time         time.(vector)
+#   bry_time     time.(vector)
 #   cycle        Length (days) for cycling the climatology.(Real)
-#   clobber      Switch to allow or not writing over an existing
-#                file.(character string)
 #
 #
 ################################################################
@@ -1042,7 +1088,7 @@ def create_bryfile(bryname,grdname,title,obc,\
     nc_u_south=nc.createVariable('u_south',np.float64, ('v3d_time','s_rho','xi_u',))
     nc_u_south.long_name = 'southern boundary u-momentum component'
     nc_u_south.units = 'meter second-1'
-    nc_u_south.coordinates = 'lon_u s_rho u_time'
+    nc_u_south.coordinates = 'lon_u s_rho u_bry_time'
 #
     nc_v_south=nc.createVariable('v_south',np.float64, ('v3d_time','s_rho','xi_rho',))
     nc_v_south.long_name = 'southern boundary v-momentum component'
@@ -1082,7 +1128,7 @@ def create_bryfile(bryname,grdname,title,obc,\
     nc_u_east=nc.createVariable('u_east',np.float64, ('v3d_time','s_rho','eta_rho',))
     nc_u_east.long_name = 'eastern boundary u-momentum component'
     nc_u_east.units = 'meter second-1'
-    nc_u_east.coordinates = 'lat_u s_rho u_time'
+    nc_u_east.coordinates = 'lat_u s_rho u_bry_time'
 #
     nc_v_east=nc.createVariable('v_east',np.float64, ('v3d_time','s_rho','eta_v',))
     nc_v_east.long_name = 'eastern boundary v-momentum component'
@@ -1122,9 +1168,9 @@ def create_bryfile(bryname,grdname,title,obc,\
     nc_u_north=nc.createVariable('u_north',np.float64, ('v3d_time','s_rho','xi_u',))
     nc_u_north.long_name = 'northern boundary u-momentum component'
     nc_u_north.units = 'meter second-1'
-    nc_u_north.coordinates = 'lon_u s_rho u_time'
+    nc_u_north.coordinates = 'lon_u s_rho u_bry_time'
 #
-    nc_v_north=nc.createVariable('v_nort',np.float64, ('v3d_time','s_rho','xi_rho',))
+    nc_v_north=nc.createVariable('v_north',np.float64, ('v3d_time','s_rho','xi_rho',))
     nc_v_north.long_name = 'northern boundary v-momentum component'
     nc_v_north.units = 'meter second-1'
     nc_v_north.coordinates = 'lon_v s_rho vclm_time'
@@ -1162,7 +1208,7 @@ def create_bryfile(bryname,grdname,title,obc,\
     nc_u_west=nc.createVariable('u_west',np.float64, ('v3d_time','s_rho','eta_rho',))
     nc_u_west.long_name = 'western boundary u-momentum component'
     nc_u_west.units = 'meter second-1'
-    nc_u_west.coordinates = 'lat_u s_rho u_time'
+    nc_u_west.coordinates = 'lat_u s_rho u_bry_time'
 #
     nc_v_west=nc.createVariable('v_west',np.float64, ('v3d_time','s_rho','eta_v',))
     nc_v_west.long_name = 'western boundary v-momentum component'
@@ -1198,8 +1244,8 @@ def create_bryfile(bryname,grdname,title,obc,\
   nc_spherical[:]='T'
   nc_Vtransform[:]=vtransform
   nc_Vstretching[:]=1
-  nc_tstart[:] =   np.min(brytime) 
-  nc_tend[:] =     np.max(brytime) 
+  nc_tstart[:] =   np.min(bry_time) 
+  nc_tend[:] =     np.max(bry_time) 
   nc_theta_s[:] =  theta_s 
   nc_theta_b[:] =  theta_b 
   nc_Tcline[:] =  hc 
@@ -1208,17 +1254,17 @@ def create_bryfile(bryname,grdname,title,obc,\
   nc_sc_w[:] = sc_w
   nc_Cs_r[:] = Cs_r  
   nc_Cs_w[:] = Cs_w
-  nc_tclm_time[:] =  brytime 
-  nc_temp_time[:] =  brytime 
-  nc_sclm_time[:] =  brytime 
-  nc_salt_time[:] =  brytime 
-  nc_uclm_time[:] =  brytime 
-  nc_vclm_time[:] =  brytime 
-  nc_v2d_time[:]  =  brytime 
-  nc_v3d_time[:]  =  brytime 
-  nc_ssh_time[:]  =  brytime
-  nc_zeta_time[:] =  brytime
-  nc_bry_time[:]  =  brytime 
+  nc_tclm_time[:] =  bry_time 
+  nc_temp_time[:] =  bry_time 
+  nc_sclm_time[:] =  bry_time 
+  nc_salt_time[:] =  bry_time 
+  nc_uclm_time[:] =  bry_time 
+  nc_vclm_time[:] =  bry_time 
+  nc_v2d_time[:]  =  bry_time 
+  nc_v3d_time[:]  =  bry_time 
+  nc_ssh_time[:]  =  bry_time
+  nc_zeta_time[:] =  bry_time
+  nc_bry_time[:]  =  bry_time 
 
   if obc[0]==1:
     nc_u_south[:] =  0. 
@@ -1259,4 +1305,353 @@ def create_bryfile(bryname,grdname,title,obc,\
   nc.close()
 
   return
+
+#
+#
+#
+######################################################################
+###### END FUNCTION CREATE_BRYFILE ###################################
+######################################################################
+#
+#
+
+
+
+#
+#
+######################################################################
+##### FUNCTION GET_DELAUNAY_BRY ######################################
+######################################################################
+#
+#
+
+def get_delaunay_bry(lon_bry,lat_bry,dl,ncglo):
+
+#
+#
+################################################################
+#
+# function get_delaunay_bry(lon_bry,lat_bry,dl,ncglo)
+#
+#   This function computes the delaunay matrices for the interpolations 
+#   at the boundaies
+#
+#   Input:
+#
+#   lon_bry      Longitudes of the boundary (vector).
+#   lat_bry      Latitudes of the boundary (vector).
+#   dl           extra extension in deg (real).
+#   ncglo        netcdf structure poiting to the GLORYS file
+#
+#   Output:
+#
+#   LonT_bry,LatT_bry,iminT_bry,imaxT_bry,jminT_bry,jmaxT_bry,elemT_bry,coefT_bry,
+#   LonU_bry,LatU_bry,iminU_bry,imaxU_bry,jminU_bry,jmaxU_bry,elemU_bry,coefU_bry,
+#   LonV_bry,LatV_bry,iminV_bry,imaxV_bry,jminV_bry,jmaxV_bry,elemV_bry,coefV_bry
+#
+################################################################
+#
+#
+
+    comp_delaunay=1
+
+    lonmin=np.min(lon_bry)-dl
+    lonmax=np.max(lon_bry)+dl
+    latmin=np.min(lat_bry)-dl
+    latmax=np.max(lat_bry)+dl
+  
+
+#
+# get GLORYS positions and indices at T-points
+#
+
+    latT    = np.array(ncglo['latT'][:])
+    lonT    = np.array(ncglo['lonT'][:])
+
+    iminT_bry   = glor.geo_idx(lonmin, lonT)
+    imaxT_bry   = glor.geo_idx(lonmax, lonT)
+    jminT_bry   = glor.geo_idx(latmin, latT)
+    jmaxT_bry   = glor.geo_idx(latmax, latT) 
+  
+    lonT=lonT[iminT_bry:imaxT_bry]
+    latT=latT[jminT_bry:jmaxT_bry]
+    (LonT_bry,LatT_bry)=np.meshgrid(lonT,latT)
+
+#
+# get GLORYS positions and indices at U-points
+#
+
+    latU    = np.array(ncglo['latU'][:])
+    lonU    = np.array(ncglo['lonU'][:])
+
+    iminU_bry   = glor.geo_idx(lonmin, lonU)
+    imaxU_bry   = glor.geo_idx(lonmax, lonU)
+    jminU_bry   = glor.geo_idx(latmin, latU)
+    jmaxU_bry   = glor.geo_idx(latmax, latU) 
+
+    lonU=lonU[iminU_bry:imaxU_bry]
+    latU=latU[jminU_bry:jmaxU_bry]
+    (LonU_bry,LatU_bry)=np.meshgrid(lonU,latU)
+
+#
+# get GLORYS positions and indices at V-points
+#
+
+    latV    = np.array(ncglo['latV'][:])
+    lonV    = np.array(ncglo['lonV'][:])
+
+    iminV_bry   = glor.geo_idx(lonmin, lonV)
+    imaxV_bry   = glor.geo_idx(lonmax, lonV)
+    jminV_bry   = glor.geo_idx(latmin, latV)
+    jmaxV_bry   = glor.geo_idx(latmax, latV) 
+  
+    lonV=lonV[iminV_bry:imaxV_bry]
+    latV=latV[jminV_bry:jmaxV_bry]
+    (LonV_bry,LatV_bry)=np.meshgrid(lonV,latV)
+
+#
+# Horizontal and vertical interp/extrapolations 
+#
+
+    print(' ')
+    print(' Interpolations / extrapolations')
+    print(' ')
+
+#
+# Get the 2D interpolation coefficients
+#
+
+    if comp_delaunay==1:
+ 
+      print('Compute Delaunay triangulation from GLORYS T-points to CROCO rho_points...')
+      [elemT_bry,coefT_bry] = glor.get_tri_coef(LonT_bry,LatT_bry,lon_bry,lat_bry)
+      coefnorm=np.sum(coefT_bry,axis=2)
+      coefT_bry=coefT_bry/coefnorm[:,:,np.newaxis]
+
+      print('Compute Delaunay triangulation from GLORYS U-points to CROCO rho_points...')
+      [elemU_bry,coefU_bry] = glor.get_tri_coef(LonU_bry,LatU_bry,lon_bry,lat_bry)
+      coefnorm=np.sum(coefU_bry,axis=2)
+      coefU_bry=coefU_bry/coefnorm[:,:,np.newaxis]
+
+      print('Compute Delaunay triangulation from GLORYS V-points to CROCO rho_points...')
+      [elemV_bry,coefV_bry] = glor.get_tri_coef(LonV_bry,LatV_bry,lon_bry,lat_bry)
+      coefnorm=np.sum(coefV_bry,axis=2)
+      coefV_bry=coefV_bry/coefnorm[:,:,np.newaxis]
+
+#
+# Save the Delaunay triangulation matrices
+#
+
+      np.savez('coeffs_bry.npz',\
+             coefT_bry=coefT_bry,elemT_bry=elemT_bry,\
+             coefU_bry=coefU_bry,elemU_bry=elemU_bry,\
+	     coefV_bry=coefV_bry,elemV_bry=elemV_bry)
+
+    else:
+
+#
+# Load the Delaunay triangulation matrices
+#
+
+      print('Load Delaunay triangulation...')
+      data=np.load('coeffs_bry.npz')
+      coefT_bry = data['coefT_bry']
+      elemT_bry = data['elemT_bry']
+      coefU_bry = data['coefU_bry']
+      elemU_bry = data['elemU_bry']
+      coefV_bry = data['coefV_bry']
+      elemV_bry = data['elemV_bry']
+
+    print('Delaunay triangulation done')
+
+    return(LonT_bry,LatT_bry,iminT_bry,imaxT_bry,jminT_bry,jmaxT_bry,elemT_bry,coefT_bry,\
+           LonU_bry,LatU_bry,iminU_bry,imaxU_bry,jminU_bry,jmaxU_bry,elemU_bry,coefU_bry,\
+	   LonV_bry,LatV_bry,iminV_bry,imaxV_bry,jminV_bry,jmaxV_bry,elemV_bry,coefV_bry)
+
+
+
+#
+#
+#
+######################################################################
+###### END FUNCTION GET_DELAUNAY_BRY #################################
+######################################################################
+#
+#
+
+
+
+#
+#
+######################################################################
+##### FUNCTION INTERP_BRY ############################################
+######################################################################
+#
+#
+
+def interp_bry(obctype,ncglo,tndx_glo,ncbry,tndx_bry,\
+               h_bry,theta_s,theta_b,hc,N,vtransform,\
+	       Nzgoodmin,depth,angle_bry,\
+               LonT_bry,LatT_bry,iminT_bry,imaxT_bry,jminT_bry,jmaxT_bry,elemT_bry,coefT_bry,\
+               LonU_bry,LatU_bry,iminU_bry,imaxU_bry,jminU_bry,jmaxU_bry,elemU_bry,coefU_bry,\
+	       LonV_bry,LatV_bry,iminV_bry,imaxV_bry,jminV_bry,jmaxV_bry,elemV_bry,coefV_bry):
+
+
+#
+#
+################################################################
+# function interp_bry(obctype,ncglo,tndx_glo,ncbry,tndx_bry,\
+#              h_bry,theta_s,theta_b,hc,N,vtransform,\
+#	       Nzgoodmin,depth,angle_bry,\
+#              LonT_bry,LatT_bry,iminT_bry,imaxT_bry,jminT_bry,jmaxT_bry,elemT_bry,coefT_bry,\
+#              LonU_bry,LatU_bry,iminU_bry,imaxU_bry,jminU_bry,jmaxU_bry,elemU_bry,coefU_bry,\
+#	       LonV_bry,LatV_bry,iminV_bry,imaxV_bry,jminV_bry,jmaxV_bry,elemV_bry,coefV_bry)
+#
+#
+#   Interpolates all the variable for one boundary
+#
+#   Input:
+#
+#              obctype,ncglo,tndx_glo,ncbry,tndx_bry,
+#              h_bry,theta_s,theta_b,hc,N,vtransform,
+#	       Nzgoodmin,depth,angle_bry,
+#              LonT_bry,LatT_bry,iminT_bry,imaxT_bry,jminT_bry,jmaxT_bry,elemT_bry,coefT_bry,
+#              LonU_bry,LatU_bry,iminU_bry,imaxU_bry,jminU_bry,jmaxU_bry,elemU_bry,coefU_bry,
+#	       LonV_bry,LatV_bry,iminV_bry,imaxV_bry,jminV_bry,jmaxV_bry,elemV_bry,coefV_bry
+#
+#   Output:
+#
+#   ncbry    Netcdf file structure
+#
+################################################################
+#
+#
+
+  
+#
+#
+# 1: SSH 
+#
+#
+
+    print('Interpolate SSH...')
+  
+    (zeta_bry,NzGood) = glor.interp_tracers(ncglo,'ssh',tndx_glo,-1,\
+                                        iminT_bry,imaxT_bry,jminT_bry,jmaxT_bry,\
+				        LonT_bry,LatT_bry,coefT_bry,elemT_bry)
+
+      
+
+#
+# Get CROCO sigma coordinate at rho and w points (using zeta)
+#
+
+    z_rho=vgrd.zlevs(h_bry,zeta_bry,theta_s,theta_b,hc,N,'r',vtransform)
+
+    z_w=vgrd.zlevs(h_bry,zeta_bry,theta_s,theta_b,hc,N,'w',vtransform)
+
+#
+#
+# 2: Temperature
+#
+#
+
+    print('Interpolate Temperature...')
+
+    temp_bry=glor.interp3d(ncglo,'temp',tndx_glo,Nzgoodmin,depth,z_rho,\
+                             iminT_bry,imaxT_bry,jminT_bry,jmaxT_bry,\
+			     LonT_bry,LatT_bry,coefT_bry,elemT_bry)
+
+#
+#
+# 3: Salinity 
+#
+#
+
+    print('Interpolate Salinity...')
+
+    salt_bry=glor.interp3d(ncglo,'salt',tndx_glo,Nzgoodmin,depth,z_rho,\
+                             iminT_bry,imaxT_bry,jminT_bry,jmaxT_bry,\
+			     LonT_bry,LatT_bry,coefT_bry,elemT_bry)
+
+#
+#
+# 4: U and V 
+#
+# (interpolate on z levels at rho points - rotate to align with the grid - 
+#  put to u and v points - vertical interpolation to sigma grid)
+#
+#
+
+    cosa=np.cos(angle_bry)
+    sina=np.sin(angle_bry)
+
+    [u_bry,v_bry]=glor.interp3d_uv(ncglo,tndx_glo,Nzgoodmin,depth,z_rho,cosa,sina,\
+                    iminU_bry,imaxU_bry,jminU_bry,jmaxU_bry,\
+		    LonU_bry,LatU_bry,coefU_bry,elemU_bry,\
+                    iminV_bry,imaxV_bry,jminV_bry,jmaxV_bry,\
+		    LonV_bry,LatV_bry,coefV_bry,elemV_bry)
+
+
+#
+#
+# 5: UBAR and VBAR 
+#
+# Here it could be nice to get the barotropic transport from GLORYS, to put it on CROCO grid,
+# and to correct u and v accordingly...
+# But let's start simple and just integrate u and v on CROCO grid.
+#
+#
+
+    (ubar_bry,h0)=vgrd.vintegr(u_bry,rho2u_3d(z_w),rho2u_3d(z_rho),np.nan,np.nan)/rho2u_2d(h_bry)
+    (vbar_bry,h0)=vgrd.vintegr(v_bry,rho2v_3d(z_w),rho2v_3d(z_rho),np.nan,np.nan)/rho2v_2d(h_bry)
+
+
+    if obctype=='s':
+
+      ncbry['zeta_south'][tndx_bry,:]=zeta_bry[0,:]
+      ncbry['temp_south'][tndx_bry,:,:]=temp_bry[:,0,:]
+      ncbry['salt_south'][tndx_bry,:,:]=salt_bry[:,0,:]
+      ncbry['u_south'][tndx_bry,:,:]=u_bry[:,0,:]
+      ncbry['v_south'][tndx_bry,:,:]=v_bry[:,0,:]
+      ncbry['ubar_south'][tndx_bry,:]=ubar_bry[0,:]
+      ncbry['vbar_south'][tndx_bry,:]=vbar_bry[0,:]
+      
+    elif obctype=='n':
+
+      ncbry['zeta_north'][tndx_bry,:]=zeta_bry[-1,:]
+      ncbry['temp_north'][tndx_bry,:,:]=temp_bry[:,-1,:]
+      ncbry['salt_north'][tndx_bry,:,:]=salt_bry[:,-1,:]
+      ncbry['u_north'][tndx_bry,:,:]=u_bry[:,-1,:]
+      ncbry['v_north'][tndx_bry,:,:]=v_bry[:,-1,:]
+      ncbry['ubar_north'][tndx_bry,:]=ubar_bry[-1,:]
+      ncbry['vbar_north'][tndx_bry,:]=vbar_bry[-1,:]
+
+    elif obctype=='e':
+
+      ncbry['zeta_east'][tndx_bry,:]=zeta_bry[:,0]
+      ncbry['temp_east'][tndx_bry,:,:]=temp_bry[:,:,0]
+      ncbry['salt_east'][tndx_bry,:,:]=salt_bry[:,:,0]
+      ncbry['u_east'][tndx_bry,:,:]=u_bry[:,:,0]
+      ncbry['v_east'][tndx_bry,:,:]=v_bry[:,:,0]
+      ncbry['ubar_east'][tndx_bry,:]=ubar_bry[:,0]
+      ncbry['vbar_east'][tndx_bry,:]=vbar_bry[:,0]
+
+
+    elif obctype=='w':
+
+      ncbry['zeta_west'][tndx_bry,:]=zeta_bry[:,-1]
+      ncbry['temp_west'][tndx_bry,:,:]=temp_bry[:,:,-1]
+      ncbry['salt_west'][tndx_bry,:,:]=salt_bry[:,:,-1]
+      ncbry['u_west'][tndx_bry,:,:]=u_bry[:,:,-1]
+      ncbry['v_west'][tndx_bry,:,:]=v_bry[:,:,-1]
+      ncbry['ubar_west'][tndx_bry,:]=ubar_bry[:,-1]
+      ncbry['vbar_west'][tndx_bry,:]=vbar_bry[:,-1]
+
+    return(ncbry)
+
+
+
+
+
 

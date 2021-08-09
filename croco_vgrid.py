@@ -1,11 +1,12 @@
-
 #
 #
 #########################################################################
 #
 #
+# croco_vgrid.py
 #
-# A collection of python functions to deal with CROCO vertical grids :
+#
+# A collection of functions to deal with CROCO vertical grids :
 #
 #
 # * CSF = get_csf(sc,theta_s,theta_b)
@@ -85,6 +86,7 @@ import tpx_tools as tpx
 import croco_vgrid as vgrd
 from netCDF4 import Dataset     as netcdf
 from   progressbar import *
+from interp_Cgrid import *
 
 #
 #

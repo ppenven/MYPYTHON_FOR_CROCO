@@ -14,6 +14,7 @@
 #
 #
 #
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -30,23 +31,16 @@ import croco_vgrid as vgrd
 import croco_glorys as glor
 from   progressbar import *
 
-
-
 if 1==1:
 #def main_func():
+
+#
 #
 #
 ##################### USERS DEFINED VARIABLES ########################
 #
-#  Title 
-#
-  
 #
 #
-################### END USERS DEFINED VARIABLES ######################
-#
-#
-  
  
   title='Initial file using GLORYS'
 
@@ -57,6 +51,10 @@ if 1==1:
 
   ininame        = crocofiles_dir  +'swag4_ini.nc'
   grdname        = crocofiles_dir + 'swag4_grd.nc'
+
+  crocofiles_dir = my_home_dir + 'SWAG/Run_TEST/CROCO_FILES/'
+  ininame        = crocofiles_dir  +'croco_ini_glo.nc'
+  grdname        = crocofiles_dir + 'croco_grd.nc'
 
   N = 32
   theta_s    =  7.
@@ -78,6 +76,13 @@ if 1==1:
 
   tndx_glo=0 # time index in the GLORYS file (should be only 0 here)
   tndx_ini=0 # time index in the CROCO initial file (should be only 0 here)
+  
+#
+#
+################### END USERS DEFINED VARIABLES ######################
+#
+#
+  
 
 #
 # Get the time in days since Yorig,1,1 
